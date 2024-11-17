@@ -20,8 +20,8 @@ const usersFilePath = "./data/users.json"
 
 func readUsers() []User {
 	var users []User
-	file, err := ioutil.ReadFile(usersFilePath)
 
+	file, err := os.Open(usersFilePath)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return users
@@ -29,7 +29,15 @@ func readUsers() []User {
 		panic(err)
 	}
 
-	err = json.Unmarshal(file, &users)
+	defer file.Close()
+
+	data, err := ioutil.ReadAll(file)
+
+	if err != nil {
+		panic(err)
+	}
+
+	err = json.Unmarshal(data, &users)
 	if err != nil {
 		panic(err)
 	}
@@ -38,13 +46,18 @@ func readUsers() []User {
 }
 
 func saveUsers(users []User) {
-	file, err := json.MarshalIndent(users, "", " ")
+	file, err := os.Create(usersFilePath)
+	if err != nil {
+		panic(err)
+	}
+	defer file.Close()
 
+	data, err := json.MarshalIndent(users, "", "  ")
 	if err != nil {
 		panic(err)
 	}
 
-	err = ioutil.WriteFile(usersFilePath, file, 0644)
+	_, err = file.Write(data)
 	if err != nil {
 		panic(err)
 	}
