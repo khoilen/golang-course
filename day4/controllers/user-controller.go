@@ -70,9 +70,12 @@ func (ctrl *UserController) Login(c *gin.Context) {
 
 	expirationTime := time.Now().Add(24 * time.Hour)
 
-	claims := &jwt.StandardClaims{
-		Subject:   user.UserName,
-		ExpiresAt: expirationTime.Unix(),
+	claims := &models.CustomClaims{
+		UserID: user.ID,
+		StandardClaims: jwt.StandardClaims{
+			Subject:   user.UserName,
+			ExpiresAt: expirationTime.Unix(),
+		},
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)

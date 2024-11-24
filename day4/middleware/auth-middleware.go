@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"net/http"
+	"user-auth/models"
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
@@ -18,7 +19,7 @@ func AuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		claims := &jwt.StandardClaims{}
+		claims := &models.CustomClaims{}
 		token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
 			return jwtKey, nil
 		})
@@ -29,6 +30,7 @@ func AuthMiddleware() gin.HandlerFunc {
 		}
 
 		c.Set("username", claims.Subject)
+		c.Set("userID", claims.UserID)
 		c.Next()
 	}
 }
