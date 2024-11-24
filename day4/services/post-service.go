@@ -17,7 +17,10 @@ func (s *PostService) CreatePost(post *models.Post) error {
 func (s *PostService) GetPostByID(postID uint) (*models.Post, error) {
 	var post models.Post
 	err := s.DB.First(&post, postID).Error
-	return &post, err
+	if err != nil {
+		return nil, err
+	}
+	return &post, nil
 }
 
 func (s *PostService) UpdatePost(post *models.Post) error {
