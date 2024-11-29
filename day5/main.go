@@ -15,6 +15,7 @@ func main() {
 	http.POST("/login", handlers.Login)
 	http.GET("/ping", handlers.Ping)
 	http.GET("/ping-count", handlers.PingCount)
+	http.GET("/top", handlers.TopHandler)
 
 	http.Run(":8080")
 }

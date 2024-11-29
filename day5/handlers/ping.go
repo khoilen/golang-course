@@ -10,7 +10,6 @@ import (
 )
 
 var lock = &sync.Mutex{}
-var isLocked = false
 
 func Ping(c *gin.Context) {
 	sessionId := c.GetHeader("Authorization")
@@ -24,31 +23,27 @@ func Ping(c *gin.Context) {
 		return
 	}
 
-	if !tryLock() {
-		c.JSON(http.StatusOK, gin.H{"message": "deny"})
+	rateLimitKey := "rate_limit_" + username
+	val, _ := redis.Client.Get(redis.Ctx, rateLimitKey).Int()
+
+	if val >= 2 {
+		c.JSON(http.StatusTooManyRequests, gin.H{"error": "Rate limit exceeded. You can only call /ping 2 times in 60 seconds."})
 		return
 	}
 
-	defer unlock()
+	redis.Client.Incr(redis.Ctx, rateLimitKey)
+
+	if val == 0 {
+		redis.Client.Expire(redis.Ctx, rateLimitKey, 60*time.Second)
+	}
+
+	lock.Lock()
+	defer lock.Unlock()
 
 	time.Sleep(5 * time.Second)
 
 	redis.Client.Incr(redis.Ctx, "ping_count_"+username)
+	redis.Client.PFAdd(redis.Ctx, "ping_users_hll", username)
 
 	c.JSON(http.StatusOK, gin.H{"message": "pong"})
-}
-
-func tryLock() bool {
-	locked := lock.TryLock()
-	if locked {
-		isLocked = true
-	}
-	return locked
-}
-
-func unlock() {
-	if isLocked {
-		lock.Unlock()
-		isLocked = false
-	}
 }

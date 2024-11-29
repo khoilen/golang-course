@@ -27,5 +27,11 @@ func PingCount(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"ping_count": pingCount})
+	count, err := redis.Client.PFCount(redis.Ctx, "ping_users_hll").Result()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"ping_count": pingCount, "unique_users": count})
 }
