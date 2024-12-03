@@ -10,6 +10,10 @@ type PostService struct {
 	DB *gorm.DB
 }
 
+func NewPostService(db *gorm.DB) *PostService {
+	return &PostService{DB: db}
+}
+
 func (s *PostService) CreatePost(post *models.Post) error {
 	return s.DB.Create(post).Error
 }

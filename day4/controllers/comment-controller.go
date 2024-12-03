@@ -3,15 +3,27 @@ package controllers
 import (
 	"net/http"
 	"strconv"
+	"user-auth/config"
 	"user-auth/models"
 	"user-auth/services"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 type CommentController struct {
 	CommentService *services.CommentService
 	PostService    *services.PostService
+}
+
+func NewCommentController(db *gorm.DB) *CommentController {
+	redisClient := config.NewRedisClient()
+	commentService := services.NewCommentService(db, redisClient)
+	postService := services.NewPostService(db)
+	return &CommentController{
+		CommentService: commentService,
+		PostService:    postService,
+	}
 }
 
 func (ctrl *CommentController) AddComment(c *gin.Context) {
