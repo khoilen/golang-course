@@ -2,6 +2,7 @@ package services
 
 import (
 	"encoding/json"
+	"fmt"
 	"time"
 	"user-auth/config"
 	"user-auth/models"
@@ -24,12 +25,27 @@ func (service *PostService) CreatePost(post *models.Post) error {
 }
 
 func (service *PostService) GetPostByID(postID uint) (*models.Post, error) {
-	var post models.Post
-	err := service.DB.First(&post, postID).Error
-	if err != nil {
+	cacheKey := fmt.Sprintf("posts:post:%d", postID)
+	val, err := service.RedisClient.Get(config.Ctx, cacheKey).Result()
+	if err == redis.Nil {
+		var post models.Post
+		err := service.DB.Where("id = ?", postID).Find(&post).Error
+		if err != nil {
+			return nil, err
+		}
+		data, err := json.Marshal(post)
+		if err != nil {
+			return nil, err
+		}
+		service.RedisClient.Set(config.Ctx, cacheKey, data, 15*time.Minute).Err()
+		return &post, err
+	} else if err != nil {
 		return nil, err
 	}
-	return &post, nil
+
+	var post models.Post
+	err = json.Unmarshal([]byte(val), &post)
+	return &post, err
 }
 
 func (service *PostService) UpdatePost(post *models.Post) error {
