@@ -19,7 +19,7 @@ type CommentController struct {
 func NewCommentController(db *gorm.DB) *CommentController {
 	redisClient := config.NewRedisClient()
 	commentService := services.NewCommentService(db, redisClient)
-	postService := services.NewPostService(db)
+	postService := services.NewPostService(db, redisClient)
 	return &CommentController{
 		CommentService: commentService,
 		PostService:    postService,

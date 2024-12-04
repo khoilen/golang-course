@@ -19,7 +19,7 @@ func main() {
 	userService := &services.UserService{DB: db}
 	userController := &controllers.UserController{UserService: userService}
 
-	postService := &services.PostService{DB: db}
+	postService := &services.PostService{DB: db, RedisClient: redisClient}
 	postController := &controllers.PostController{PostService: postService}
 
 	likeService := &services.LikeService{DB: db}
