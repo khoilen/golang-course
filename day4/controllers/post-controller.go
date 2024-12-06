@@ -3,14 +3,24 @@ package controllers
 import (
 	"net/http"
 	"strconv"
+	"user-auth/config"
 	"user-auth/models"
 	"user-auth/services"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 type PostController struct {
 	PostService *services.PostService
+}
+
+func NewPostController(db *gorm.DB) *PostController {
+	redisClient := config.NewRedisClient()
+	postService := services.NewPostService(db, redisClient)
+	return &PostController{
+		PostService: postService,
+	}
 }
 
 func (ctrl *PostController) CreatePost(c *gin.Context) {

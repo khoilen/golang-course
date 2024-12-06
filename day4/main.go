@@ -2,8 +2,8 @@ package main
 
 import (
 	"os"
+	"user-auth/config"
 	"user-auth/controllers"
-	"user-auth/database"
 	"user-auth/middleware"
 	"user-auth/models"
 	"user-auth/services"
@@ -12,19 +12,20 @@ import (
 )
 
 func main() {
-	db := database.InitDB()
+	db := config.InitDB()
+	redisClient := config.NewRedisClient()
 	db.AutoMigrate(&models.User{}, &models.Post{}, &models.Like{}, &models.Comment{})
 
 	userService := &services.UserService{DB: db}
 	userController := &controllers.UserController{UserService: userService}
 
-	postService := &services.PostService{DB: db}
+	postService := &services.PostService{DB: db, RedisClient: redisClient}
 	postController := &controllers.PostController{PostService: postService}
 
 	likeService := &services.LikeService{DB: db}
 	likeController := &controllers.LikeController{LikeService: likeService, PostService: postService}
 
-	commentService := &services.CommentService{DB: db}
+	commentService := &services.CommentService{DB: db, RedisClient: redisClient}
 	commentController := &controllers.CommentController{CommentService: commentService, PostService: postService}
 
 	router := gin.Default()

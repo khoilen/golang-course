@@ -1,14 +1,17 @@
 package controllers
 
 import (
+	"fmt"
 	"net/http"
 	"path/filepath"
 	"time"
+	"user-auth/config"
 	"user-auth/models"
 	"user-auth/services"
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
+	"github.com/go-redis/redis/v8"
 	"github.com/gorilla/sessions"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -21,6 +24,7 @@ var (
 
 type UserController struct {
 	UserService *services.UserService
+	RedisClient *redis.Client
 }
 
 func (ctrl *UserController) Register(c *gin.Context) {
@@ -84,6 +88,15 @@ func (ctrl *UserController) Login(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
 		return
 	}
+
+	redisKey := fmt.Sprintf("session:%d", user.ID)
+	err = ctrl.RedisClient.Set(config.Ctx, redisKey, tokenString, 24*time.Hour).Err()
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to store session"})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{"token": tokenString})
 }
 
