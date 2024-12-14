@@ -14,7 +14,10 @@ import (
 func main() {
 	db := config.InitDB()
 	redisClient := config.NewRedisClient()
-	db.AutoMigrate(&models.User{}, &models.Post{}, &models.Like{}, &models.Comment{})
+	db.AutoMigrate(&models.User{}, &models.Post{}, &models.Like{}, &models.Comment{}, &models.Follow{})
+
+	followService := &services.FollowService{DB: db}
+	followController := &controllers.FollowController{FollowService: followService}
 
 	userService := &services.UserService{DB: db}
 	userController := &controllers.UserController{UserService: userService, RedisClient: redisClient}
@@ -42,22 +45,26 @@ func main() {
 		v1.GET("/posts", postController.ListPosts)
 		v1.POST("/logout", userController.Logout)
 
-		auth := router.Group("/")
+		auth := v1.Group("/")
 		auth.Use(middleware.AuthMiddleware())
-		v1.GET("/users/:username", userController.GetUser)
-		v1.PUT("/users/", userController.UpdateUser)
-		v1.POST("/users/:username/profile", userController.UploadProfile)
+		{
+			auth.GET("/users/:username", userController.GetUser)
+			auth.PUT("/users", userController.UpdateUser)
+			auth.POST("/users/:username/profile", userController.UploadProfile)
+			auth.GET("/follows/:user_id", followController.GetFollows)
+			auth.POST("/follows/:user_id", followController.FollowUser)
 
-		v1.POST("/posts", postController.CreatePost)
-		v1.GET("/posts/:postID", postController.GetPost)
-		v1.PUT("/posts/:postID", postController.UpdatePost)
-		v1.DELETE("/posts/:postID", postController.DeletePost)
+			auth.POST("/posts", postController.CreatePost)
+			auth.GET("/posts/:postID", postController.GetPost)
+			auth.PUT("/posts/:postID", postController.UpdatePost)
+			auth.DELETE("/posts/:postID", postController.DeletePost)
 
-		v1.POST("/posts/:postID/like", likeController.LikePost)
-		v1.DELETE("/posts/:postID/like", likeController.UnlikePost)
+			auth.POST("/posts/:postID/like", likeController.LikePost)
+			auth.DELETE("/posts/:postID/like", likeController.UnlikePost)
 
-		v1.POST("/posts/:postID/comments", commentController.AddComment)
-		v1.GET("/posts/:postID/comments", commentController.GetComments)
+			auth.POST("/posts/:postID/comments", commentController.AddComment)
+			auth.GET("/posts/:postID/comments", commentController.GetComments)
+		}
 	}
 
 	router.Run(":8080")
