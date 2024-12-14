@@ -27,7 +27,7 @@ type UserController struct {
 	RedisClient *redis.Client
 }
 
-func (ctrl *UserController) Register(c *gin.Context) {
+func (ctrl *UserController) SignUp(c *gin.Context) {
 	var newUser models.User
 
 	if err := c.ShouldBindJSON(&newUser); err != nil {
@@ -51,7 +51,13 @@ func (ctrl *UserController) Register(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusCreated, gin.H{"message": "User registered successfully"})
+	c.JSON(http.StatusCreated, gin.H{
+		"user_name":  newUser.UserName,
+		"email":      newUser.Email,
+		"first_name": newUser.FirstName,
+		"last_name":  newUser.LastName,
+		"birthday":   newUser.BirthDay,
+	})
 }
 
 func (ctrl *UserController) Login(c *gin.Context) {
@@ -66,7 +72,6 @@ func (ctrl *UserController) Login(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid username or password"})
 		return
 	}
-
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(loginUser.Password)); err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid username or password"})
 		return
@@ -89,7 +94,9 @@ func (ctrl *UserController) Login(c *gin.Context) {
 		return
 	}
 
-	redisKey := fmt.Sprintf("session:%d", user.ID)
+	redisKey := fmt.Sprintf("session:user:%s", user.UserName)
+	fmt.Print(user.UserName)
+
 	err = ctrl.RedisClient.Set(config.Ctx, redisKey, tokenString, 24*time.Hour).Err()
 
 	if err != nil {
@@ -97,7 +104,16 @@ func (ctrl *UserController) Login(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"token": tokenString})
+	c.JSON(http.StatusOK, gin.H{
+		"token": tokenString,
+		"user": gin.H{
+			"user_name":  user.UserName,
+			"email":      user.Email,
+			"first_name": user.FirstName,
+			"last_name":  user.LastName,
+			"birthday":   user.BirthDay,
+		},
+	})
 }
 
 func (ctrl *UserController) GetUser(c *gin.Context) {
@@ -113,14 +129,15 @@ func (ctrl *UserController) GetUser(c *gin.Context) {
 }
 
 func (ctrl *UserController) UpdateUser(c *gin.Context) {
-	username := c.Param("username")
 	var updateUser models.User
 
 	if err := c.ShouldBindJSON(&updateUser); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 	}
 
-	user, err := ctrl.UserService.GetUsersByUserName(username)
+	username, _ := c.Get("username")
+
+	user, err := ctrl.UserService.GetUsersByUserName(username.(string))
 	if err != nil || user == nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
 		return
@@ -140,7 +157,16 @@ func (ctrl *UserController) UpdateUser(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"message": "User information updated"})
+	c.JSON(http.StatusOK, gin.H{
+		"message": "User information updated",
+		"user": gin.H{
+			"user_name":  user.UserName,
+			"email":      user.Email,
+			"first_name": user.FirstName,
+			"last_name":  user.LastName,
+			"birthday":   user.BirthDay,
+		},
+	})
 }
 
 func (ctrl *UserController) UploadProfile(c *gin.Context) {

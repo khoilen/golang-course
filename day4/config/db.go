@@ -30,5 +30,7 @@ func InitDB() *gorm.DB {
 		log.Fatalf("failed to connect database: %v", err)
 	}
 
+	// migrations.ResetMigrations(*db)
+
 	return db
 }

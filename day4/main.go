@@ -17,7 +17,7 @@ func main() {
 	db.AutoMigrate(&models.User{}, &models.Post{}, &models.Like{}, &models.Comment{})
 
 	userService := &services.UserService{DB: db}
-	userController := &controllers.UserController{UserService: userService}
+	userController := &controllers.UserController{UserService: userService, RedisClient: redisClient}
 
 	postService := &services.PostService{DB: db, RedisClient: redisClient}
 	postController := &controllers.PostController{PostService: postService}
@@ -35,28 +35,30 @@ func main() {
 	if _, err := os.Stat("uploads"); os.IsNotExist(err) {
 		os.Mkdir("uploads", os.ModePerm)
 	}
+	v1 := router.Group("/v1")
+	{
+		v1.POST("/users", userController.SignUp)
+		v1.POST("/sessions", userController.Login)
+		v1.GET("/posts", postController.ListPosts)
+		v1.POST("/logout", userController.Logout)
 
-	router.POST("/register", userController.Register)
-	router.POST("/login", userController.Login)
-	router.GET("/posts", postController.ListPosts)
-	router.POST("/logout", userController.Logout)
+		auth := router.Group("/")
+		auth.Use(middleware.AuthMiddleware())
+		v1.GET("/users/:username", userController.GetUser)
+		v1.PUT("/users/", userController.UpdateUser)
+		v1.POST("/users/:username/profile", userController.UploadProfile)
 
-	auth := router.Group("/")
-	auth.Use(middleware.AuthMiddleware())
-	auth.GET("/user/:username", userController.GetUser)
-	auth.PUT("/user/:username", userController.UpdateUser)
-	auth.POST("/user/:username/profile", userController.UploadProfile)
+		v1.POST("/posts", postController.CreatePost)
+		v1.GET("/posts/:postID", postController.GetPost)
+		v1.PUT("/posts/:postID", postController.UpdatePost)
+		v1.DELETE("/posts/:postID", postController.DeletePost)
 
-	auth.POST("/posts", postController.CreatePost)
-	auth.GET("/posts/:postID", postController.GetPost)
-	auth.PUT("/posts/:postID", postController.UpdatePost)
-	auth.DELETE("/posts/:postID", postController.DeletePost)
+		v1.POST("/posts/:postID/like", likeController.LikePost)
+		v1.DELETE("/posts/:postID/like", likeController.UnlikePost)
 
-	auth.POST("/posts/:postID/like", likeController.LikePost)
-	auth.DELETE("/posts/:postID/like", likeController.UnlikePost)
-
-	auth.POST("/posts/:postID/comments", commentController.AddComment)
-	auth.GET("/posts/:postID/comments", commentController.GetComments)
+		v1.POST("/posts/:postID/comments", commentController.AddComment)
+		v1.GET("/posts/:postID/comments", commentController.GetComments)
+	}
 
 	router.Run(":8080")
 }

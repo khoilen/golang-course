@@ -6,6 +6,6 @@ import (
 
 type Like struct {
 	gorm.Model
-	UserID uint `json:"user_id" gorm:"index:idx_user_post"`
-	PostID uint `json:"post_id" gorm:"index:idx_user_post"`
+	UserID uint `json:"fk_user_id" gorm:"index:idx_user_post"`
+	PostID uint `json:"fk_post_id" gorm:"index:idx_user_post"`
 }
