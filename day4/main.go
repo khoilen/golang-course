@@ -42,7 +42,7 @@ func main() {
 	{
 		v1.POST("/users", userController.SignUp)
 		v1.POST("/sessions", userController.Login)
-		v1.GET("/posts", postController.ListPosts)
+		v1.GET("/newsfeeds", postController.ListPosts)
 		v1.POST("/logout", userController.Logout)
 
 		auth := v1.Group("/")
