@@ -51,8 +51,10 @@ func main() {
 			auth.GET("/users/:username", userController.GetUser)
 			auth.PUT("/users", userController.UpdateUser)
 			auth.POST("/users/:username/profile", userController.UploadProfile)
-			auth.GET("/follows/:user_id", followController.GetFollows)
-			auth.POST("/follows/:user_id", followController.FollowUser)
+			auth.GET("/friends/:user_id", followController.GetFollows)
+			auth.POST("/friends/:user_id", followController.FollowUser)
+			auth.DELETE("/friends/:user_id", followController.UnFollowUser)
+			auth.GET("/friends/:user_id/posts", followController.GetFollowsPosts)
 
 			auth.POST("/posts", postController.CreatePost)
 			auth.GET("/posts/:postID", postController.GetPost)
